@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Nutrition Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Bootstrap 4 CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f0f8ff;
+            font-family: 'Roboto', sans-serif;
+            padding-top: 30px;
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+        .card {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+        }
+       
+        .result, .chart-container {
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 12px;
+        }
+        .cardblock {
+            max-width: 100%;
+            min-height: 450px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Nutrition and BMR Calculator</h1>
+
+        <div class="row justify-content-center">
+            <div class="col-md-4"><br/>
+                <div class="card p-4 cardblock">
+                    <form id="nutritionForm" >
+                        <div class="form-group">
+                            <label for="weight">Weight (kg):</label>
+                            <input type="number" id="weight" name="weight" class="form-control" value="75" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="height">Height (cm):</label>
+                            <input type="number" id="height" name="height" class="form-control" value="170" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="age">Age (years):</label>
+                            <input type="number" id="age" name="age" class="form-control" value="30" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="activity">Activity Level:</label>
+                            <select id="activity" name="activity" class="form-control" required>
+                                <option value="1.2">Sedentary (little or no exercise)</option>
+                                <option value="1.375" selected>Lightly active (light exercise/sports)</option>
+                                <option value="1.55">Moderately active (moderate exercise/sports)</option>
+                                <option value="1.725">Very active (hard exercise/sports)</option>
+                            </select>
+                        </div>
+
+                        <button type="button" class="btn btn-success btn-block" onclick="calculateBMR()">Calculate</button>
+                    </form>
+                </div>
+            </div>
+        
+            <div class="col-md-4"><br/>
+                <div class="result card cardblock" id="result">
+                    <!-- BMR results will be displayed here -->
+                </div>
+            </div>
+            
+            <div class="col-md-4"><br/>
+                <div class="result card chart-container cardblock">
+                    <canvas id="macronutrientChart"></canvas>
+                </div>
+                <br/><br/>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 4 JS, Popper.js, and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <script>
+        function calculateBMR() {
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+            const age = parseInt(document.getElementById('age').value);
+            const activity = parseFloat(document.getElementById('activity').value);
+
+            // BMR Calculation
+            const bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+
+            // Total daily calorie needs based on activity level
+            const totalCalories = bmr * activity;
+
+            // Macronutrient breakdown
+            const proteinCalories = totalCalories * 0.35;
+            const carbCalories = totalCalories * 0.55;
+            const fatCalories = totalCalories * 0.20;
+
+            const proteinGrams = proteinCalories / 4;
+            const carbGrams = carbCalories / 4;
+            const fatGrams = fatCalories / 9;
+
+            // Display results
+            document.getElementById('result').innerHTML = `
+                <h3 class="text-center">Results:</h3>
+                <p><strong>BMR (Calories needed per day):</strong> ${bmr.toFixed(2)} kcal</p>
+                <p><strong>Total Calories (with activity):</strong> ${totalCalories.toFixed(2)} kcal</p>
+                <p><strong>Protein:</strong> ${proteinGrams.toFixed(2)} g</p>
+                <p><strong>Carbohydrates:</strong> ${carbGrams.toFixed(2)} g</p>
+                <p><strong>Fats:</strong> ${fatGrams.toFixed(2)} g</p>
+            `;
+
+            // Update the chart with new values
+            updateChart(proteinGrams.toFixed(2), carbGrams.toFixed(2), fatGrams.toFixed(2));
+        }
+
+        function updateChart(protein, carbs, fats) {
+            const ctx = document.getElementById('macronutrientChart').getContext('2d');
+            
+            // If chart already exists, destroy it before creating a new one
+            if (window.myChart) {
+                window.myChart.destroy();
+            }
+            
+            window.myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Protein (g)', 'Carbohydrates (g)', 'Fats (g)'],
+                    datasets: [{
+                        data: [protein, carbs, fats],
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
+                        hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    return `${tooltipItem.label}: ${tooltipItem.raw}g`;
+                                }
+                            }
+                        }
+                    }
+                 }
+            });
+        }
+    </script>
+
+</body>
+</html>
